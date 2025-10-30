@@ -17,5 +17,35 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: test-driving-superpowers-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  app:
+    # This is your actual application runtime / dev container
+    # For example, Node, Python, .NET, etc.
+    # For now I'll assume Node 20 dev image. Swap this to whatever your app actually is.
+    image: node:20-alpine
+    container_name: test-driving-superpowers-app
+    working_dir: /workspace
+    command: ["sleep", "infinity"]
+      # ^ in dev mode this just keeps the container alive so you can exec in,
+      # run npm install, run tests, etc. Later this could be ["npm","run","dev"]
+    volumes:
+      - app-source:/workspace        # <-- this is the shared source code volume
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://app_user:app_password@db:5432/test_driving_superpowers
+
 volumes:
   postgres-data:
+  app-source:
