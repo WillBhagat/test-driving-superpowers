@@ -34,6 +34,12 @@ export default function Home() {
           <div className="flex flex-col gap-4 sm:flex-row">
             <a
               className="inline-flex items-center justify-center rounded-full bg-zinc-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-black dark:hover:bg-zinc-300"
+              href="/messages"
+            >
+              Try Message Recording
+            </a>
+            <a
+              className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               href="https://nextjs.org/docs"
               target="_blank"
               rel="noopener noreferrer"
