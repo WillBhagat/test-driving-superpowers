@@ -131,6 +131,12 @@ describe('ContactForm - Controlled Inputs', () => {
     const user = userEvent.setup();
     render(<ContactForm />);
 
+    // Fill in required fields so button is enabled
+    await user.type(screen.getByLabelText(/^name \*/i), 'John');
+    await user.type(screen.getByLabelText(/^email \*/i), 'john@example.com');
+    await user.type(screen.getByLabelText(/^message \*/i), 'Test');
+
+    // Now test tab order
     const nameInput = screen.getByLabelText(/^name \*/i);
     nameInput.focus();
 

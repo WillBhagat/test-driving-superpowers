@@ -11,6 +11,14 @@ interface FormData {
   message: string;
 }
 
+interface FormErrors {
+  name?: string;
+  email?: string;
+  message?: string;
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ContactForm() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -21,6 +29,33 @@ export default function ContactForm() {
     message: '',
   });
 
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateName = (value: string): string | undefined => {
+    if (!value.trim()) {
+      return 'Name is required';
+    }
+    return undefined;
+  };
+
+  const validateEmail = (value: string): string | undefined => {
+    if (!value.trim()) {
+      return 'Email is required';
+    }
+    if (!EMAIL_REGEX.test(value)) {
+      return 'Please enter a valid email address';
+    }
+    return undefined;
+  };
+
+  const validateMessage = (value: string): string | undefined => {
+    if (!value.trim()) {
+      return 'Message is required';
+    }
+    return undefined;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -29,6 +64,40 @@ export default function ContactForm() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+
+    // Run validation for the field
+    let error: string | undefined;
+    if (name === 'name') {
+      error = validateName(value);
+    } else if (name === 'email') {
+      error = validateEmail(value);
+    } else if (name === 'message') {
+      error = validateMessage(value);
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
+  };
+
+  const hasErrors = () => {
+    return Object.values(errors).some((error) => error !== undefined);
+  };
+
+  const isFormValid = () => {
+    return (
+      formData.name.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      EMAIL_REGEX.test(formData.email) &&
+      formData.message.trim() !== '' &&
+      !hasErrors()
+    );
   };
 
   return (
@@ -47,9 +116,13 @@ export default function ContactForm() {
             name="name"
             value={formData.name}
             onChange={handleChange}
+            onBlur={handleBlur}
             aria-required="true"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {touched.name && errors.name && (
+            <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+          )}
         </div>
 
         {/* Email Field */}
@@ -63,9 +136,13 @@ export default function ContactForm() {
             name="email"
             value={formData.email}
             onChange={handleChange}
+            onBlur={handleBlur}
             aria-required="true"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {touched.email && errors.email && (
+            <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+          )}
         </div>
 
         {/* Job Title Field */}
@@ -123,16 +200,21 @@ export default function ContactForm() {
             name="message"
             value={formData.message}
             onChange={handleChange}
+            onBlur={handleBlur}
             aria-required="true"
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {touched.message && errors.message && (
+            <p className="text-red-600 text-sm mt-1">{errors.message}</p>
+          )}
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          disabled={!isFormValid()}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Submit
         </button>
