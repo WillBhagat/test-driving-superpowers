@@ -98,13 +98,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Database insertion will be added in Task 2.2
-    // For now, return success to pass validation tests
-    return NextResponse.json(
-      { success: true, message: "Thank you! We'll be in touch soon." },
-      { status: 201 }
-    );
+    // Insert into database
+    try {
+      const { insertContactSubmission } = await import('@/db/client');
+      await insertContactSubmission({
+        name: body.name,
+        email: body.email,
+        job_title: body.job_title || null,
+        phone_number: body.phone_number || null,
+        company_name: body.company_name || null,
+        message: body.message,
+      });
+
+      return NextResponse.json(
+        { success: true, message: "Thank you! We'll be in touch soon." },
+        { status: 201 }
+      );
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Unable to process request. Please try again.' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
+    console.error('Request processing error:', error);
     return NextResponse.json(
       { success: false, error: 'Unable to process request. Please try again.' },
       { status: 500 }
