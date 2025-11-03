@@ -22,8 +22,10 @@ export async function runMigration(pool: Pool): Promise<void> {
   }
 }
 
-// CLI runner
-if (require.main === module) {
+// CLI runner - check if this file is being run directly
+const isMainModule = process.argv[1]?.includes('migrate');
+
+if (isMainModule) {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
