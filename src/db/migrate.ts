@@ -3,6 +3,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { config } from 'dotenv';
+
+// Load environment variables (including .env.local for Next.js compatibility)
+config({ path: ['.env.local', '.env'] });
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
