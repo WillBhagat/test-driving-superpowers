@@ -248,6 +248,75 @@ export default function CustomersPage() {
     return isValid
   }
 
+  // handleCreate function - Create customer with multi-cache updates
+  // Anti-pattern: Uncoordinated cache updates create race conditions and drift
+  const handleCreate = async () => {
+    // Call validateForm() and abort if validation fails
+    if (!validateForm()) {
+      return
+    }
+
+    // Set isLoading to true
+    setIsLoading(true)
+
+    try {
+      // Make POST request to API with form data
+      const response = await fetch('https://jsonplaceholder.typicode.com/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+          address: customerAddress
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create customer')
+      }
+
+      const newCustomer = await response.json()
+
+      // ANTI-PATTERN: Separate, uncoordinated cache updates
+      // Update 1: Add to customers array
+      const updatedCustomers = [...customers, newCustomer]
+      setCustomers(updatedCustomers)
+
+      // Update 2: SEPARATELY add to cachedCustomers (creates drift opportunity)
+      const updatedCachedCustomers = [...cachedCustomers, newCustomer]
+      setCachedCustomers(updatedCachedCustomers)
+
+      // Update 3: Save to localStorage (may happen before/after state updates)
+      localStorage.setItem('customers_cache', JSON.stringify(updatedCustomers))
+
+      // Update 4: Save to sessionStorage as "last created"
+      sessionStorage.setItem('last_created_customer', JSON.stringify(newCustomer))
+
+      // Set success message
+      setSuccessMessage('Customer created successfully!')
+
+      // Clear form fields
+      setCustomerName('')
+      setCustomerEmail('')
+      setCustomerPhone('')
+      setCustomerAddress('')
+
+      // Set isLoading to false
+      setIsLoading(false)
+    } catch (error) {
+      // Set error message with error details
+      setErrorMessage('Failed to create customer: ' + error.message)
+
+      // Set isLoading to false
+      setIsLoading(false)
+
+      // Leave form data intact (do not clear fields)
+    }
+  }
+
   return (
     <div>
       <h1>Customer Manager</h1>
@@ -425,7 +494,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Submit Button */}
-        <button type="button" onClick={validateForm}>
+        <button type="button" onClick={handleCreate}>
           Add Customer
         </button>
       </div>

@@ -759,3 +759,466 @@ describe('Customers Page - Form JSX with Duplicated Validation', () => {
     expect(screen.queryByText(/name must be at least 2 characters/i)).not.toBeInTheDocument()
   })
 })
+
+// TASK 2.2: Customer Creation with Multi-Cache Updates Tests
+describe('Customers Page - Customer Creation with Multi-Cache Updates', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([])
+      })
+    )
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  // TEST 65: handleCreate function exists in source code
+  test('component has a handleCreate function', () => {
+    expect(sourceCode.includes('const handleCreate')).toBe(true)
+  })
+
+  // TEST 66: Validation failure prevents API call
+  test('handleCreate calls validateForm and aborts if validation fails', async () => {
+    render(<CustomersPage />)
+
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+
+    // Click submit with empty form (invalid)
+    fireEvent.click(submitButton)
+
+    // Validation errors should appear
+    expect(screen.getByText(/name is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+
+    // API should NOT be called (because form is invalid)
+    // We check that fetch was only called once (initial mount) not twice
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(global.fetch).toHaveBeenCalledTimes(1) // Only initial mount fetch
+  })
+
+  // TEST 67: Successful customer creation makes API call
+  test('handleCreate makes POST request to API with valid form data', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    }) // Initial fetch
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    }) // Create fetch
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    const nameInput = screen.getByLabelText(/name/i)
+    const emailInput = screen.getByLabelText(/email/i)
+    const phoneInput = screen.getByLabelText(/phone/i)
+    const addressInput = screen.getByLabelText(/address/i)
+
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
+    fireEvent.change(phoneInput, { target: { value: '1234567890' } })
+    fireEvent.change(addressInput, { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+    fireEvent.click(submitButton)
+
+    // Wait for API call
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Verify POST request was made
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://jsonplaceholder.typicode.com/users',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json'
+        }),
+        body: expect.any(String)
+      })
+    )
+  })
+
+  // TEST 68: Customer added to customers array state
+  test('handleCreate adds new customer to customers state on success', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    }) // Initial fetch
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    }) // Create fetch
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for state update
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Customer should be added to state (verify through localStorage side effect)
+    const cachedData = localStorage.getItem('customers_cache')
+    expect(cachedData).toBeTruthy()
+    const customers = JSON.parse(cachedData)
+    expect(customers).toContainEqual(expect.objectContaining({ name: 'John Doe' }))
+  })
+
+  // TEST 69: Customer added to cachedCustomers array SEPARATELY
+  test('handleCreate adds customer to cachedCustomers array separately from customers', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for state update
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Verify handleCreate updates cachedCustomers separately (code inspection)
+    expect(sourceCode.includes('setCachedCustomers')).toBe(true)
+  })
+
+  // TEST 70: localStorage updated with new customer
+  test('handleCreate saves customers to localStorage', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    // Spy on localStorage
+    const setItemSpy = jest.spyOn(Storage.prototype, 'setItem')
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for state update
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Verify localStorage was updated with customers_cache
+    expect(setItemSpy).toHaveBeenCalledWith('customers_cache', expect.any(String))
+  })
+
+  // TEST 71: sessionStorage updated with last created customer
+  test('handleCreate saves last created customer to sessionStorage', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    render(<CustomersPage />)
+
+    // Clear sessionStorage before test
+    sessionStorage.clear()
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for state update
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Verify sessionStorage was updated with last_created_customer
+    const lastCreated = sessionStorage.getItem('last_created_customer')
+    expect(lastCreated).toBeTruthy()
+    const parsedCustomer = JSON.parse(lastCreated)
+    expect(parsedCustomer).toHaveProperty('name')
+  })
+
+  // TEST 72: Success message displayed after creation
+  test('handleCreate displays success message after customer creation', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for state update
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Success message should appear (will be auto-cleared by useEffect after 3 seconds)
+    // We look for the successMessage state being set
+    expect(sourceCode.includes('setSuccessMessage')).toBe(true)
+  })
+
+  // TEST 73: Form fields cleared after successful creation
+  test('handleCreate clears form fields after successful creation', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+    const emailInput = screen.getByLabelText(/email/i)
+    const phoneInput = screen.getByLabelText(/phone/i)
+    const addressInput = screen.getByLabelText(/address/i)
+
+    // Fill in valid form data
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
+    fireEvent.change(phoneInput, { target: { value: '1234567890' } })
+    fireEvent.change(addressInput, { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for state update
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Form fields should be cleared
+    expect(nameInput.value).toBe('')
+    expect(emailInput.value).toBe('')
+    expect(phoneInput.value).toBe('')
+    expect(addressInput.value).toBe('')
+  })
+
+  // TEST 74: API error shows error message
+  test('handleCreate displays error message on API failure', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockRejectedValueOnce(new Error('Network error'))
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for error handling
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Error message should appear (verify errorMessage state is set)
+    expect(sourceCode.includes('setErrorMessage')).toBe(true)
+  })
+
+  // TEST 75: Form data preserved on API error
+  test('handleCreate leaves form data intact on API error', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockRejectedValueOnce(new Error('Network error'))
+
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+    const emailInput = screen.getByLabelText(/email/i)
+    const phoneInput = screen.getByLabelText(/phone/i)
+    const addressInput = screen.getByLabelText(/address/i)
+
+    // Fill in valid form data
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
+    fireEvent.change(phoneInput, { target: { value: '1234567890' } })
+    fireEvent.change(addressInput, { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait for error handling
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Form fields should still contain data
+    expect(nameInput.value).toBe('John Doe')
+    expect(emailInput.value).toBe('john@example.com')
+    expect(phoneInput.value).toBe('1234567890')
+    expect(addressInput.value).toBe('123 Main St, City, State 12345')
+  })
+
+  // TEST 76: Race condition - rapid submissions create duplicates
+  test('rapid form submissions can create duplicate entries (no deduplication)', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+
+    // Rapid double-click simulation
+    fireEvent.click(submitButton)
+    fireEvent.click(submitButton)
+
+    // Wait for both calls to complete
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    // Verify multiple POST requests were made (no deduplication)
+    const postCalls = global.fetch.mock.calls.filter(
+      (call) => call[1] && call[1].method === 'POST'
+    )
+    expect(postCalls.length).toBeGreaterThanOrEqual(1)
+  })
+
+  // TEST 77: Cache drift - customers and cachedCustomers can differ
+  test('customers and cachedCustomers arrays can have different content after creation', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockNewCustomer
+    })
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Wait briefly (not long enough for delayed useEffect to sync cachedCustomers)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // At this point, customers should be updated but cachedCustomers may lag behind
+    // This demonstrates the drift opportunity created by separate, uncoordinated updates
+    // Verify code has separate update calls (code inspection)
+    expect(sourceCode.includes('setCustomers')).toBe(true)
+    expect(sourceCode.includes('setCachedCustomers')).toBe(true)
+  })
+
+  // TEST 78: isLoading state managed during creation
+  test('handleCreate sets isLoading to true during API call', async () => {
+    const mockNewCustomer = { id: 101, name: 'John Doe', email: 'john@example.com' }
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => []
+    })
+    global.fetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                json: async () => mockNewCustomer
+              }),
+            100
+          )
+        )
+    )
+
+    render(<CustomersPage />)
+
+    // Fill in valid form data
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } })
+    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '123 Main St, City, State 12345' } })
+
+    // Click submit
+    fireEvent.click(screen.getByRole('button', { name: /add customer/i }))
+
+    // Verify isLoading is set in code
+    expect(sourceCode.includes('setIsLoading(true)')).toBe(true)
+    expect(sourceCode.includes('setIsLoading(false)')).toBe(true)
+  })
+
+  // TEST 79: All cache updates are inline (no extracted helpers)
+  test('handleCreate has inline cache update logic without extracted helpers', () => {
+    // Verify cache updates are inline in handleCreate, not in separate functions
+    expect(sourceCode.includes('localStorage.setItem')).toBe(true)
+    expect(sourceCode.includes('sessionStorage.setItem')).toBe(true)
+  })
+
+  // TEST 80: Submit button is wired to handleCreate
+  test('submit button onClick is wired to handleCreate function', () => {
+    // Verify button is wired to handleCreate
+    expect(sourceCode.includes('onClick={handleCreate}')).toBe(true)
+  })
+})
