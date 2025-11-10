@@ -366,6 +366,36 @@ export default function CustomerManager() {
   };
 
   /**
+   * Deletes a customer from the system
+   * Calls the delete API, removes customer from state and updates localStorage
+   * @param id - The customer ID to delete
+   */
+  const handleDelete = async (id: string): Promise<void> => {
+    // Clear any previous errors
+    setError(null);
+
+    try {
+      // Call API to delete customer
+      const response = await apiService.deleteCustomer(id);
+
+      if (response.success) {
+        // Remove customer from state by filtering out the deleted customer
+        const updatedCustomers = customers.filter(c => c.id !== id);
+        setCustomers(updatedCustomers);
+
+        // Persist updated customers to localStorage
+        storageService.saveToStorage(updatedCustomers);
+      } else {
+        // Handle API error response
+        setError(response.error || 'Failed to delete customer');
+      }
+    } catch (err) {
+      // Handle network or unexpected errors
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    }
+  };
+
+  /**
    * Updates a specific field in the edit form
    * @param field - The customer field to update
    * @param value - The new value for the field
