@@ -300,6 +300,7 @@ export default function CustomerManager() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Customer>>({});
+  const [operationInProgress, setOperationInProgress] = useState<boolean>(false);
 
   // Data loading effect - runs once on component mount
   useEffect(() => {
@@ -388,8 +389,12 @@ export default function CustomerManager() {
    * @param id - The customer ID to delete
    */
   const handleDelete = async (id: string): Promise<void> => {
+    // Prevent multiple simultaneous operations
+    if (operationInProgress) return;
+
     // Clear any previous errors
     setError(null);
+    setOperationInProgress(true);
 
     try {
       // Call API to delete customer
@@ -409,6 +414,8 @@ export default function CustomerManager() {
     } catch (err) {
       // Handle network or unexpected errors
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setOperationInProgress(false);
     }
   };
 
@@ -430,6 +437,9 @@ export default function CustomerManager() {
    * Validates form data, calls appropriate API, updates state and localStorage
    */
   const handleSave = async (): Promise<void> => {
+    // Prevent multiple simultaneous operations
+    if (operationInProgress) return;
+
     // Clear any previous errors
     setError(null);
 
@@ -447,6 +457,8 @@ export default function CustomerManager() {
 
     // Type assertion: after validation, we know all required fields are present
     const customerData = editForm as Omit<Customer, 'id'>;
+
+    setOperationInProgress(true);
 
     try {
       // Branch on editingId to determine create vs update operation
@@ -494,6 +506,8 @@ export default function CustomerManager() {
     } catch (err) {
       // Handle network or unexpected errors
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setOperationInProgress(false);
     }
   };
 
@@ -504,6 +518,21 @@ export default function CustomerManager() {
   const handleCancel = (): void => {
     setEditingId(null);
     setEditForm({});
+  };
+
+  /**
+   * Handles keyboard navigation in edit mode
+   * Enter key saves the form, Escape key cancels
+   * @param event - Keyboard event
+   */
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>): void => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSave();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCancel();
+    }
   };
 
   /**
@@ -702,13 +731,14 @@ export default function CustomerManager() {
               <tbody>
                 {/* Add row - displayed when editingId === 'new' */}
                 {editingId === 'new' && (
-                  <tr style={{ backgroundColor: '#f9f9f9' }}>
+                  <tr style={{ backgroundColor: '#f9f9f9' }} onKeyDown={handleKeyDown}>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                       <input
                         type="text"
                         value={editForm.name || ''}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         placeholder="Enter name"
+                        aria-label="Customer name"
                         style={{
                           width: '100%',
                           padding: '6px 8px',
@@ -725,6 +755,7 @@ export default function CustomerManager() {
                         value={editForm.email || ''}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder="Enter email"
+                        aria-label="Customer email"
                         style={{
                           width: '100%',
                           padding: '6px 8px',
@@ -741,6 +772,7 @@ export default function CustomerManager() {
                         value={editForm.phone || ''}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="Enter phone"
+                        aria-label="Customer phone"
                         style={{
                           width: '100%',
                           padding: '6px 8px',
@@ -755,29 +787,33 @@ export default function CustomerManager() {
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           onClick={handleSave}
+                          disabled={operationInProgress}
                           style={{
                             padding: '6px 12px',
                             backgroundColor: '#4CAF50',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: 'pointer',
+                            cursor: operationInProgress ? 'not-allowed' : 'pointer',
                             fontSize: '14px',
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
+                            opacity: operationInProgress ? 0.6 : 1
                           }}
                         >
                           Save
                         </button>
                         <button
                           onClick={handleCancel}
+                          disabled={operationInProgress}
                           style={{
                             padding: '6px 12px',
                             backgroundColor: '#f44336',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
+                            cursor: operationInProgress ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            opacity: operationInProgress ? 0.6 : 1
                           }}
                         >
                           Cancel
@@ -794,13 +830,14 @@ export default function CustomerManager() {
 
                   return isEditing ? (
                     // EDIT MODE: Render input fields with Save/Cancel buttons
-                    <tr key={customer.id} style={{ backgroundColor: '#f9f9f9' }}>
+                    <tr key={customer.id} style={{ backgroundColor: '#f9f9f9' }} onKeyDown={handleKeyDown}>
                       <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                         <input
                           type="text"
                           value={editForm.name || ''}
                           onChange={(e) => handleInputChange('name', e.target.value)}
                           placeholder="Enter name"
+                          aria-label="Customer name"
                           style={{
                             width: '100%',
                             padding: '6px 8px',
@@ -817,6 +854,7 @@ export default function CustomerManager() {
                           value={editForm.email || ''}
                           onChange={(e) => handleInputChange('email', e.target.value)}
                           placeholder="Enter email"
+                          aria-label="Customer email"
                           style={{
                             width: '100%',
                             padding: '6px 8px',
@@ -833,6 +871,7 @@ export default function CustomerManager() {
                           value={editForm.phone || ''}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                           placeholder="Enter phone"
+                          aria-label="Customer phone"
                           style={{
                             width: '100%',
                             padding: '6px 8px',
@@ -847,29 +886,33 @@ export default function CustomerManager() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             onClick={handleSave}
+                            disabled={operationInProgress}
                             style={{
                               padding: '6px 12px',
                               backgroundColor: '#4CAF50',
                               color: 'white',
                               border: 'none',
                               borderRadius: '4px',
-                              cursor: 'pointer',
+                              cursor: operationInProgress ? 'not-allowed' : 'pointer',
                               fontSize: '14px',
-                              fontWeight: 'bold'
+                              fontWeight: 'bold',
+                              opacity: operationInProgress ? 0.6 : 1
                             }}
                           >
                             Save
                           </button>
                           <button
                             onClick={handleCancel}
+                            disabled={operationInProgress}
                             style={{
                               padding: '6px 12px',
                               backgroundColor: '#f44336',
                               color: 'white',
                               border: 'none',
                               borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '14px'
+                              cursor: operationInProgress ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              opacity: operationInProgress ? 0.6 : 1
                             }}
                           >
                             Cancel
@@ -893,28 +936,32 @@ export default function CustomerManager() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             onClick={() => handleEdit(customer)}
+                            disabled={operationInProgress}
                             style={{
                               padding: '6px 12px',
                               backgroundColor: '#2196F3',
                               color: 'white',
                               border: 'none',
                               borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '14px'
+                              cursor: operationInProgress ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              opacity: operationInProgress ? 0.6 : 1
                             }}
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(customer.id)}
+                            disabled={operationInProgress}
                             style={{
                               padding: '6px 12px',
                               backgroundColor: '#f44336',
                               color: 'white',
                               border: 'none',
                               borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '14px'
+                              cursor: operationInProgress ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              opacity: operationInProgress ? 0.6 : 1
                             }}
                           >
                             Delete
