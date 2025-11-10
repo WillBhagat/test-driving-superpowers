@@ -632,8 +632,78 @@ export default function CustomerManager() {
       {/* Main content - displayed when not loading and no error */}
       {!loading && !error && (
         <div>
-          <h1>Customer Manager</h1>
-          <p>Customer management functionality will be implemented in subsequent tasks.</p>
+          <h2 style={{ marginBottom: '20px', color: '#333' }}>Customer Management</h2>
+
+          <button
+            onClick={handleAdd}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              marginBottom: '20px',
+              fontWeight: 'bold'
+            }}
+          >
+            Add Customer
+          </button>
+
+          {customers.length === 0 ? (
+            <p style={{ color: '#666', fontSize: '16px', fontStyle: 'italic' }}>
+              No customers yet. Add one to get started.
+            </p>
+          ) : (
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                border: '1px solid #ddd'
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5' }}>
+                  <th style={{
+                    border: '1px solid #ddd',
+                    padding: '12px',
+                    textAlign: 'left',
+                    fontWeight: 'bold'
+                  }}>
+                    Name
+                  </th>
+                  <th style={{
+                    border: '1px solid #ddd',
+                    padding: '12px',
+                    textAlign: 'left',
+                    fontWeight: 'bold'
+                  }}>
+                    Email
+                  </th>
+                  <th style={{
+                    border: '1px solid #ddd',
+                    padding: '12px',
+                    textAlign: 'left',
+                    fontWeight: 'bold'
+                  }}>
+                    Phone
+                  </th>
+                  <th style={{
+                    border: '1px solid #ddd',
+                    padding: '12px',
+                    textAlign: 'left',
+                    fontWeight: 'bold'
+                  }}>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Rows will be rendered here in Task 5.3 */}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </div>
