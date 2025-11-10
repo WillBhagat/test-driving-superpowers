@@ -286,42 +286,58 @@ export default function CustomerManager() {
 
   // Data loading effect - runs once on component mount
   useEffect(() => {
+    // Track if component is still mounted to prevent setState on unmounted component
+    let isMounted = true;
+
     // Async IIFE to handle async operations in useEffect
     (async () => {
       // Phase 1: Load cached data from localStorage immediately
       const cachedCustomers = storageService.loadFromStorage();
 
-      if (cachedCustomers.length > 0) {
+      if (cachedCustomers.length > 0 && isMounted) {
         // Display cached data instantly for better UX
         setCustomers(cachedCustomers);
-        setLoading(false);
+        // Note: Keep loading indicator visible while fetching fresh data
       }
 
       // Phase 2: Fetch fresh data from API
       try {
         // Clear any previous errors before API call
-        setError(null);
+        if (isMounted) {
+          setError(null);
+        }
 
         const response = await apiService.fetchCustomers();
 
-        if (response.success && response.data) {
-          // Update state with fresh data
-          setCustomers(response.data);
+        if (isMounted) {
+          if (response.success && response.data) {
+            // Update state with fresh data
+            setCustomers(response.data);
 
-          // Persist fresh data to localStorage
-          storageService.saveToStorage(response.data);
-        } else {
-          // Handle API error response
-          setError(response.error || 'Failed to fetch customers');
+            // Persist fresh data to localStorage
+            storageService.saveToStorage(response.data);
+          } else {
+            // Handle API error response
+            setError(response.error || 'Failed to fetch customers');
+          }
         }
       } catch (err) {
         // Handle network or unexpected errors
-        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        }
       } finally {
         // Always set loading to false after API call completes
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     })();
+
+    // Cleanup function to prevent setState on unmounted component
+    return () => {
+      isMounted = false;
+    };
   }, []); // Empty dependency array ensures this runs only once on mount
 
   // Component will be implemented in subsequent tasks
