@@ -700,7 +700,230 @@ export default function CustomerManager() {
                 </tr>
               </thead>
               <tbody>
-                {/* Rows will be rendered here in Task 5.3 */}
+                {/* Add row - displayed when editingId === 'new' */}
+                {editingId === 'new' && (
+                  <tr style={{ backgroundColor: '#f9f9f9' }}>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      <input
+                        type="text"
+                        value={editForm.name || ''}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        placeholder="Enter name"
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      <input
+                        type="email"
+                        value={editForm.email || ''}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="Enter email"
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      <input
+                        type="tel"
+                        value={editForm.phone || ''}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="Enter phone"
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={handleSave}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#4CAF50',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {/* Customer rows - map over customers array */}
+                {customers.map((customer) => {
+                  // Check if this customer is being edited
+                  const isEditing = editingId === customer.id;
+
+                  return isEditing ? (
+                    // EDIT MODE: Render input fields with Save/Cancel buttons
+                    <tr key={customer.id} style={{ backgroundColor: '#f9f9f9' }}>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        <input
+                          type="text"
+                          value={editForm.name || ''}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          placeholder="Enter name"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        <input
+                          type="email"
+                          value={editForm.email || ''}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          placeholder="Enter email"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        <input
+                          type="tel"
+                          value={editForm.phone || ''}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          placeholder="Enter phone"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={handleSave}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#4CAF50',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleCancel}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#f44336',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    // VIEW MODE: Render plain text with Edit/Delete buttons
+                    <tr key={customer.id}>
+                      <td style={{ border: '1px solid #ddd', padding: '12px' }}>
+                        {customer.name}
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '12px' }}>
+                        {customer.email}
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '12px' }}>
+                        {customer.phone}
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '12px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => handleEdit(customer)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#2196F3',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(customer.id)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#f44336',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
