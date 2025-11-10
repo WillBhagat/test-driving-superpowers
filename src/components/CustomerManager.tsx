@@ -352,6 +352,20 @@ export default function CustomerManager() {
   };
 
   /**
+   * Initiates edit mode for an existing customer
+   * Pre-fills the edit form with the customer's current data
+   * @param customer - The customer to edit
+   */
+  const handleEdit = (customer: Customer): void => {
+    setEditingId(customer.id);
+    setEditForm({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone
+    });
+  };
+
+  /**
    * Updates a specific field in the edit form
    * @param field - The customer field to update
    * @param value - The new value for the field
@@ -364,8 +378,9 @@ export default function CustomerManager() {
   };
 
   /**
-   * Saves the current edit form as a new customer
-   * Validates form data, calls API, updates state and localStorage
+   * Saves the current edit form, handling both create and update operations
+   * Branches on editingId to determine if creating new or updating existing customer
+   * Validates form data, calls appropriate API, updates state and localStorage
    */
   const handleSave = async (): Promise<void> => {
     // Clear any previous errors
@@ -387,23 +402,47 @@ export default function CustomerManager() {
     const customerData = editForm as Omit<Customer, 'id'>;
 
     try {
-      // Call API to create new customer
-      const response = await apiService.createCustomer(customerData);
+      // Branch on editingId to determine create vs update operation
+      if (editingId === 'new') {
+        // CREATE CASE: Call API to create new customer
+        const response = await apiService.createCustomer(customerData);
 
-      if (response.success && response.data) {
-        // Update customers state with new customer
-        const updatedCustomers = [...customers, response.data];
-        setCustomers(updatedCustomers);
+        if (response.success && response.data) {
+          // Update customers state with new customer
+          const updatedCustomers = [...customers, response.data];
+          setCustomers(updatedCustomers);
 
-        // Persist updated customers to localStorage
-        storageService.saveToStorage(updatedCustomers);
+          // Persist updated customers to localStorage
+          storageService.saveToStorage(updatedCustomers);
 
-        // Exit edit mode and clear form
-        setEditingId(null);
-        setEditForm({});
-      } else {
-        // Handle API error response
-        setError(response.error || 'Failed to create customer');
+          // Exit edit mode and clear form
+          setEditingId(null);
+          setEditForm({});
+        } else {
+          // Handle API error response
+          setError(response.error || 'Failed to create customer');
+        }
+      } else if (editingId) {
+        // UPDATE CASE: Call API to update existing customer
+        const response = await apiService.updateCustomer(editingId, customerData);
+
+        if (response.success && response.data) {
+          // Update customers state by replacing the old customer with the updated one
+          const updatedCustomers = customers.map(customer =>
+            customer.id === editingId ? response.data! : customer
+          );
+          setCustomers(updatedCustomers);
+
+          // Persist updated customers to localStorage
+          storageService.saveToStorage(updatedCustomers);
+
+          // Exit edit mode and clear form
+          setEditingId(null);
+          setEditForm({});
+        } else {
+          // Handle API error response
+          setError(response.error || 'Failed to update customer');
+        }
       }
     } catch (err) {
       // Handle network or unexpected errors
