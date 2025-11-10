@@ -164,3 +164,69 @@ export const apiService = {
     });
   }
 };
+
+/**
+ * Storage service for persisting customer data to localStorage
+ * Provides methods to save, load, and clear customer data with graceful error handling
+ */
+export const storageService = {
+  /**
+   * Storage key used for persisting customer data
+   */
+  STORAGE_KEY: 'customerManager_customers' as const,
+
+  /**
+   * Saves customer array to localStorage
+   * @param customers - Array of customers to persist
+   */
+  saveToStorage(customers: Customer[]): void {
+    try {
+      const serialized = JSON.stringify(customers);
+      localStorage.setItem(this.STORAGE_KEY, serialized);
+    } catch (error) {
+      // Handle localStorage errors gracefully (quota exceeded, privacy mode, etc.)
+      console.error('Failed to save customers to localStorage:', error);
+    }
+  },
+
+  /**
+   * Loads customer array from localStorage
+   * @returns Array of customers, or empty array if no data exists or parsing fails
+   */
+  loadFromStorage(): Customer[] {
+    try {
+      const serialized = localStorage.getItem(this.STORAGE_KEY);
+
+      // Return empty array if no data exists
+      if (serialized === null) {
+        return [];
+      }
+
+      const parsed = JSON.parse(serialized);
+
+      // Validate that parsed data is an array
+      if (!Array.isArray(parsed)) {
+        console.error('Invalid data format in localStorage: expected array');
+        return [];
+      }
+
+      return parsed;
+    } catch (error) {
+      // Handle localStorage errors or JSON parsing errors gracefully
+      console.error('Failed to load customers from localStorage:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Clears customer data from localStorage
+   */
+  clearStorage(): void {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+    } catch (error) {
+      // Handle localStorage errors gracefully
+      console.error('Failed to clear customers from localStorage:', error);
+    }
+  }
+};
