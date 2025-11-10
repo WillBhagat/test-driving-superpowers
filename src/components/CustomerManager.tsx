@@ -55,7 +55,7 @@ let mockCustomers: Customer[] = [
 /**
  * Mock API service that simulates backend operations with realistic delays
  */
-const apiService = {
+export const apiService = {
   /**
    * Fetches all customers from the mock backend
    * @returns Promise resolving to ApiResponse with array of customers
@@ -83,7 +83,7 @@ const apiService = {
       const delay = 1000 + Math.random() * 1000; // 1-2 second delay
       setTimeout(() => {
         const newCustomer: Customer = {
-          id: Date.now().toString(), // Generate unique ID using timestamp
+          id: crypto.randomUUID(), // Generate unique ID using random UUID
           ...customer
         };
         mockCustomers.push(newCustomer);
