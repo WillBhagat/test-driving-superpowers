@@ -230,3 +230,44 @@ export const storageService = {
     }
   }
 };
+
+/**
+ * Validation service for checking customer form data
+ * Validates required fields and returns user-friendly error messages
+ */
+export const validationService = {
+  /**
+   * Validates customer data for required fields
+   * @param customer - Partial customer data to validate
+   * @returns Array of validation errors (empty if all required fields are present)
+   */
+  validateCustomer(customer: Partial<Customer>): ValidationError[] {
+    const errors: ValidationError[] = [];
+
+    // Check name field (trim whitespace to handle empty strings)
+    if (!customer.name || customer.name.trim() === '') {
+      errors.push({
+        field: 'name',
+        message: 'Name is required'
+      });
+    }
+
+    // Check email field (trim whitespace to handle empty strings)
+    if (!customer.email || customer.email.trim() === '') {
+      errors.push({
+        field: 'email',
+        message: 'Email is required'
+      });
+    }
+
+    // Check phone field (trim whitespace to handle empty strings)
+    if (!customer.phone || customer.phone.trim() === '') {
+      errors.push({
+        field: 'phone',
+        message: 'Phone is required'
+      });
+    }
+
+    return errors;
+  }
+};
