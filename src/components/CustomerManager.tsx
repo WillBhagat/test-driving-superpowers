@@ -489,6 +489,141 @@ export default function CustomerManager() {
     setEditForm({});
   };
 
-  // Component will be implemented in subsequent tasks
-  return null;
+  /**
+   * Dismisses the current error by clearing the error state
+   * Allows users to remove error alerts from the UI
+   */
+  const handleDismissError = (): void => {
+    setError(null);
+  };
+
+  /**
+   * Retries data loading by resetting loading state and triggering a reload
+   * Clears current error and initiates a fresh API call
+   */
+  const handleRetry = async (): Promise<void> => {
+    // Clear error and set loading state
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await apiService.fetchCustomers();
+
+      if (response.success && response.data) {
+        // Update state with fresh data
+        setCustomers(response.data);
+
+        // Persist fresh data to localStorage
+        storageService.saveToStorage(response.data);
+      } else {
+        // Handle API error response
+        setError(response.error || 'Failed to fetch customers');
+      }
+    } catch (err) {
+      // Handle network or unexpected errors
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      // Always set loading to false after API call completes
+      setLoading(false);
+    }
+  };
+
+  // Render component UI
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      {/* Error alert - displayed when error exists */}
+      {error && (
+        <div
+          style={{
+            backgroundColor: '#fee',
+            border: '1px solid #fcc',
+            borderRadius: '4px',
+            padding: '12px 16px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <strong style={{ color: '#c33' }}>Error:</strong>
+            <span style={{ marginLeft: '8px', color: '#600' }}>{error}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginLeft: '16px' }}>
+            <button
+              onClick={handleRetry}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Retry
+            </button>
+            <button
+              onClick={handleDismissError}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading spinner - displayed during data fetching */}
+      {loading && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '40px',
+            fontSize: '18px',
+            color: '#666'
+          }}
+        >
+          <div style={{ marginBottom: '12px' }}>Loading customers...</div>
+          <div
+            style={{
+              display: 'inline-block',
+              width: '40px',
+              height: '40px',
+              border: '4px solid #f3f3f3',
+              borderTop: '4px solid #3498db',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}
+          />
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
+      )}
+
+      {/* Main content - displayed when not loading */}
+      {!loading && (
+        <div>
+          <h1>Customer Manager</h1>
+          <p>Customer management functionality will be implemented in subsequent tasks.</p>
+        </div>
+      )}
+    </div>
+  );
 }
