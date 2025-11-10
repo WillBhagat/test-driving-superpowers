@@ -340,6 +340,86 @@ export default function CustomerManager() {
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
+  // Handler functions for customer operations
+
+  /**
+   * Initiates add mode by setting editingId to 'new' and clearing the edit form
+   * This prepares the UI for creating a new customer
+   */
+  const handleAdd = (): void => {
+    setEditingId('new');
+    setEditForm({});
+  };
+
+  /**
+   * Updates a specific field in the edit form
+   * @param field - The customer field to update
+   * @param value - The new value for the field
+   */
+  const handleInputChange = (field: keyof Customer, value: string): void => {
+    setEditForm(prevForm => ({
+      ...prevForm,
+      [field]: value
+    }));
+  };
+
+  /**
+   * Saves the current edit form as a new customer
+   * Validates form data, calls API, updates state and localStorage
+   */
+  const handleSave = async (): Promise<void> => {
+    // Clear any previous errors
+    setError(null);
+
+    // Validate form data before API call
+    const validationErrors = validationService.validateCustomer(editForm);
+
+    if (validationErrors.length > 0) {
+      // Format validation errors into a single error message string
+      const errorMessage = validationErrors
+        .map(err => err.message)
+        .join(', ');
+      setError(errorMessage);
+      return;
+    }
+
+    // Type assertion: after validation, we know all required fields are present
+    const customerData = editForm as Omit<Customer, 'id'>;
+
+    try {
+      // Call API to create new customer
+      const response = await apiService.createCustomer(customerData);
+
+      if (response.success && response.data) {
+        // Update customers state with new customer
+        const updatedCustomers = [...customers, response.data];
+        setCustomers(updatedCustomers);
+
+        // Persist updated customers to localStorage
+        storageService.saveToStorage(updatedCustomers);
+
+        // Exit edit mode and clear form
+        setEditingId(null);
+        setEditForm({});
+      } else {
+        // Handle API error response
+        setError(response.error || 'Failed to create customer');
+      }
+    } catch (err) {
+      // Handle network or unexpected errors
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    }
+  };
+
+  /**
+   * Cancels the current edit operation
+   * Clears edit mode and resets the edit form
+   */
+  const handleCancel = (): void => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
   // Component will be implemented in subsequent tasks
   return null;
 }
