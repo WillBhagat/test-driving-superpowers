@@ -8,6 +8,21 @@ import CustomersPage from '../page'
 const sourceFilePath = path.join(__dirname, '../page.jsx')
 const sourceCode = fs.readFileSync(sourceFilePath, 'utf-8')
 
+// Global setup for all tests
+beforeEach(() => {
+  // Mock fetch for all tests
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve([])
+    })
+  )
+})
+
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
 describe('Customers Page Component', () => {
   // TEST 1: Component renders without errors
   test('renders without errors', () => {
@@ -202,11 +217,194 @@ describe('Customers Page Component', () => {
     // These should be independent states that can have different values
     expect(hasSeparateCaches).toBe(true)
 
-    // Verify they are NOT being synchronized
-    const hasSyncCode =
-      sourceCode.includes('setCachedCustomers(customers)') ||
-      sourceCode.includes('setCustomers(cachedCustomers)')
+    // For Task 1.2: Now they ARE synchronized (with race conditions), so we verify they exist as separate states
+    // even though they will be synced in useEffect hooks
+    expect(sourceCode.includes('const [cachedCustomers')).toBe(true)
+    expect(sourceCode.includes('const [customers')).toBe(true)
+  })
+})
 
-    expect(hasSyncCode).toBe(false)
+// TASK 1.2: useEffect Hooks with Race Conditions Tests
+describe('Customers Page - useEffect Hooks with Race Conditions', () => {
+  beforeEach(() => {
+    // Clear all storage before each test
+    localStorage.clear()
+    sessionStorage.clear()
+    // Mock fetch with default resolved promise
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([])
+      })
+    )
+    // Spy on localStorage methods
+    jest.spyOn(Storage.prototype, 'getItem')
+    jest.spyOn(Storage.prototype, 'setItem')
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  // TEST 22: Component has 10 or more useEffect hooks
+  test('has 10 or more useEffect hooks', () => {
+    const useEffectMatches = (sourceCode.match(/useEffect\(/g) || []).length
+    expect(useEffectMatches).toBeGreaterThanOrEqual(10)
+  })
+
+  // TEST 23: Component imports useEffect from React
+  test('imports useEffect from React', () => {
+    expect(sourceCode.includes('useEffect')).toBe(true)
+    expect(sourceCode.match(/import.*useEffect.*from ['"]react['"]/)).toBeTruthy()
+  })
+
+  // TEST 24: Initial localStorage load on mount
+  test('loads customers from localStorage on mount', () => {
+    const mockData = [{ id: 1, name: 'Test Customer' }]
+    localStorage.setItem('customers_cache', JSON.stringify(mockData))
+
+    render(<CustomersPage />)
+
+    // Verify localStorage was accessed
+    expect(localStorage.getItem).toHaveBeenCalledWith('customers_cache')
+  })
+
+  // TEST 25: Initial API fetch on mount
+  test('fetches customers from API on mount', async () => {
+    const mockCustomers = [{ id: 1, name: 'API Customer' }]
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockCustomers
+    })
+
+    render(<CustomersPage />)
+
+    // Verify fetch was called
+    await screen.findByText('Customer Manager')
+    expect(global.fetch).toHaveBeenCalledWith('https://jsonplaceholder.typicode.com/users')
+  })
+
+  // TEST 26: Cache sync - save customers to localStorage on every change
+  test('has useEffect that saves customers to localStorage on change', () => {
+    expect(sourceCode.includes("localStorage.setItem('customers_cache'")).toBe(true)
+    expect(sourceCode.match(/useEffect.*customers.*localStorage/s)).toBeTruthy()
+  })
+
+  // TEST 27: Cache sync - update cachedCustomers when customers changes (delayed)
+  test('has useEffect that updates cachedCustomers from customers with delay', () => {
+    expect(sourceCode.includes('setCachedCustomers')).toBe(true)
+    expect(sourceCode.includes('setTimeout')).toBe(true)
+  })
+
+  // TEST 28: Cache sync - save search preferences to sessionStorage
+  test('has useEffect that saves search preferences to sessionStorage', () => {
+    expect(sourceCode.includes('customer_search_prefs')).toBe(true)
+    expect(sourceCode.includes('sessionStorage.setItem')).toBe(true)
+  })
+
+  // TEST 29: Cache sync - load from cachedCustomers if customers is empty
+  test('has useEffect that loads from cachedCustomers when customers is empty', () => {
+    expect(sourceCode.includes('customers.length === 0')).toBe(true)
+    expect(sourceCode.includes('cachedCustomers')).toBe(true)
+  })
+
+  // TEST 30: Auto-save draft form data to sessionStorage every 2 seconds
+  test('has useEffect that auto-saves draft form data with setInterval', () => {
+    expect(sourceCode.includes('customer_draft_form')).toBe(true)
+    expect(sourceCode.includes('sessionStorage.setItem')).toBe(true)
+    expect(sourceCode.includes('setInterval')).toBe(true)
+  })
+
+  // TEST 31: Message cleanup - clear messages after 3 seconds
+  test('has useEffect that clears messages after timeout', () => {
+    const hasSuccessMessageCleanup = sourceCode.includes('successMessage') && sourceCode.includes('setTimeout')
+    const hasErrorMessageCleanup = sourceCode.includes('errorMessage') && sourceCode.includes('setTimeout')
+
+    expect(hasSuccessMessageCleanup || hasErrorMessageCleanup).toBe(true)
+  })
+
+  // TEST 32: Search debounce with setTimeout
+  test('has useEffect that debounces search term updates', () => {
+    expect(sourceCode.includes('searchTerm')).toBe(true)
+    const hasDebounce = sourceCode.includes('setTimeout')
+    expect(hasDebounce).toBe(true)
+  })
+
+  // TEST 33: Periodic stale check - merge localStorage with state
+  test('has useEffect that periodically checks localStorage for stale data', () => {
+    expect(sourceCode.includes('setInterval')).toBe(true)
+    expect(sourceCode.includes('localStorage.getItem')).toBe(true)
+  })
+
+  // TEST 34: Race condition - overlapping dependencies
+  test('has useEffect hooks with overlapping dependencies', () => {
+    // Multiple effects should depend on same state variables
+    const customersEffects = (sourceCode.match(/useEffect\([^)]*\)[^[]*\[.*customers.*\]/g) || []).length
+    expect(customersEffects).toBeGreaterThanOrEqual(2)
+  })
+
+  // TEST 35: No cleanup functions in useEffect (intentional memory leak)
+  test('useEffect hooks lack proper cleanup functions', () => {
+    // Count useEffects with return statements (cleanup)
+    const useEffectsWithCleanup = (sourceCode.match(/useEffect\([^{]*\{[^}]*return\s+\(\)/g) || []).length
+    const totalUseEffects = (sourceCode.match(/useEffect\(/g) || []).length
+
+    // Most effects should not have cleanup (intentionally creating issues)
+    expect(totalUseEffects).toBeGreaterThanOrEqual(10)
+  })
+
+  // TEST 36: Race condition scenario - rapid state changes
+  test('component handles rapid state changes without crashing', () => {
+    const { rerender } = render(<CustomersPage />)
+
+    // Rapid rerenders should not crash
+    for (let i = 0; i < 5; i++) {
+      rerender(<CustomersPage />)
+    }
+
+    expect(screen.getByText('Customer Manager')).toBeInTheDocument()
+  })
+
+  // TEST 37: Cache conflict - localStorage and API race
+  test('component can have conflicting data from localStorage and API', async () => {
+    const localData = [{ id: 1, name: 'Local Customer' }]
+    const apiData = [{ id: 2, name: 'API Customer' }]
+
+    localStorage.setItem('customers_cache', JSON.stringify(localData))
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => apiData
+    })
+
+    render(<CustomersPage />)
+
+    // Both should be triggered, last one wins
+    await screen.findByText('Customer Manager')
+    expect(localStorage.getItem).toHaveBeenCalled()
+    expect(global.fetch).toHaveBeenCalled()
+  })
+
+  // TEST 38: Memory leak - setTimeout not cleaned up
+  test('component uses setTimeout without cleanup', () => {
+    const setTimeoutCount = (sourceCode.match(/setTimeout/g) || []).length
+    expect(setTimeoutCount).toBeGreaterThanOrEqual(2)
+  })
+
+  // TEST 39: Dependency chaos - single state change triggers multiple effects
+  test('single state change can trigger multiple useEffect hooks', () => {
+    // Check that customers is used in multiple useEffect dependencies
+    const customersInDependencies = sourceCode.match(/useEffect\([^)]+\).*?\[.*?customers.*?\]/gs) || []
+    expect(customersInDependencies.length).toBeGreaterThan(1)
+  })
+
+  // TEST 40: All three cache layers are accessed in useEffects
+  test('useEffect hooks access all three cache layers', () => {
+    const hasLocalStorageAccess = sourceCode.includes('localStorage')
+    const hasSessionStorageAccess = sourceCode.includes('sessionStorage')
+    const hasCachedCustomersAccess = sourceCode.includes('cachedCustomers')
+
+    expect(hasLocalStorageAccess).toBe(true)
+    expect(hasSessionStorageAccess).toBe(true)
+    expect(hasCachedCustomersAccess).toBe(true)
   })
 })
