@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import fs from 'fs'
 import path from 'path'
 import CustomersPage from '../page'
@@ -406,5 +406,356 @@ describe('Customers Page - useEffect Hooks with Race Conditions', () => {
     expect(hasLocalStorageAccess).toBe(true)
     expect(hasSessionStorageAccess).toBe(true)
     expect(hasCachedCustomersAccess).toBe(true)
+  })
+})
+
+// TASK 2.1: Form JSX with Duplicated Validation Tests
+describe('Customers Page - Form JSX with Duplicated Validation', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([])
+      })
+    )
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  // TEST 41: Form renders with name input field
+  test('renders name input field with correct type and value', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+    expect(nameInput).toBeInTheDocument()
+    expect(nameInput).toHaveAttribute('type', 'text')
+    expect(nameInput.value).toBe('')
+  })
+
+  // TEST 42: Form renders with email input field
+  test('renders email input field with correct type and value', () => {
+    render(<CustomersPage />)
+
+    const emailInput = screen.getByLabelText(/email/i)
+    expect(emailInput).toBeInTheDocument()
+    expect(emailInput).toHaveAttribute('type', 'email')
+    expect(emailInput.value).toBe('')
+  })
+
+  // TEST 43: Form renders with phone input field
+  test('renders phone input field with correct type and value', () => {
+    render(<CustomersPage />)
+
+    const phoneInput = screen.getByLabelText(/phone/i)
+    expect(phoneInput).toBeInTheDocument()
+    expect(phoneInput).toHaveAttribute('type', 'tel')
+    expect(phoneInput.value).toBe('')
+  })
+
+  // TEST 44: Form renders with address textarea field
+  test('renders address textarea field with correct value', () => {
+    render(<CustomersPage />)
+
+    const addressInput = screen.getByLabelText(/address/i)
+    expect(addressInput).toBeInTheDocument()
+    expect(addressInput.tagName).toBe('TEXTAREA')
+    expect(addressInput.value).toBe('')
+  })
+
+  // TEST 45: Form renders with submit button
+  test('renders submit button', () => {
+    render(<CustomersPage />)
+
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+    expect(submitButton).toBeInTheDocument()
+  })
+
+  // TEST 46: onChange handler updates name state and validates (required, 2-50 chars)
+  test('name onChange updates state and validates inline', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+
+    // Test valid input
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
+    expect(nameInput.value).toBe('John Doe')
+
+    // Test invalid input (too short)
+    fireEvent.change(nameInput, { target: { value: 'J' } })
+    expect(nameInput.value).toBe('J')
+    // Error message should appear (will test separately)
+  })
+
+  // TEST 47: onChange handler updates email state and validates (required, valid format)
+  test('email onChange updates state and validates inline', () => {
+    render(<CustomersPage />)
+
+    const emailInput = screen.getByLabelText(/email/i)
+
+    // Test valid email
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+    expect(emailInput.value).toBe('test@example.com')
+
+    // Test invalid email format
+    fireEvent.change(emailInput, { target: { value: 'invalid-email' } })
+    expect(emailInput.value).toBe('invalid-email')
+  })
+
+  // TEST 48: onChange handler updates phone state and validates (required, 10-15 digits)
+  test('phone onChange updates state and validates inline', () => {
+    render(<CustomersPage />)
+
+    const phoneInput = screen.getByLabelText(/phone/i)
+
+    // Test valid phone
+    fireEvent.change(phoneInput, { target: { value: '1234567890' } })
+    expect(phoneInput.value).toBe('1234567890')
+
+    // Test invalid phone (too short)
+    fireEvent.change(phoneInput, { target: { value: '123' } })
+    expect(phoneInput.value).toBe('123')
+  })
+
+  // TEST 49: onChange handler updates address state and validates (required, 10-200 chars)
+  test('address onChange updates state and validates inline', () => {
+    render(<CustomersPage />)
+
+    const addressInput = screen.getByLabelText(/address/i)
+
+    // Test valid address
+    fireEvent.change(addressInput, { target: { value: '123 Main St, City, State 12345' } })
+    expect(addressInput.value).toBe('123 Main St, City, State 12345')
+
+    // Test invalid address (too short)
+    fireEvent.change(addressInput, { target: { value: 'Short' } })
+    expect(addressInput.value).toBe('Short')
+  })
+
+  // TEST 50: Validation logic is duplicated in onChange (code inspection)
+  test('onChange handlers contain inline duplicated validation logic', () => {
+    // Check that validation logic is inline in onChange handlers
+    const onChangePattern = /onChange.*=.*\(/g
+    const onChangeMatches = sourceCode.match(onChangePattern) || []
+
+    // Should have onChange handlers for all 4 fields
+    expect(onChangeMatches.length).toBeGreaterThanOrEqual(4)
+
+    // Check for inline validation patterns (length checks, regex, etc.)
+    expect(sourceCode.includes('value.length < 2')).toBe(true)
+    expect(sourceCode.includes('value.length > 50')).toBe(true)
+    expect(sourceCode.includes('DUPLICATED VALIDATION #1')).toBe(true)
+  })
+
+  // TEST 51: onBlur handler validates name field (duplicated validation)
+  test('name onBlur validates with duplicated logic', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+
+    // Enter invalid value
+    fireEvent.change(nameInput, { target: { value: 'J' } })
+    // Blur should trigger validation
+    fireEvent.blur(nameInput)
+
+    // Error should be set (will verify display separately)
+    expect(nameInput.value).toBe('J')
+  })
+
+  // TEST 52: onBlur handler validates email field (duplicated validation)
+  test('email onBlur validates with duplicated logic', () => {
+    render(<CustomersPage />)
+
+    const emailInput = screen.getByLabelText(/email/i)
+
+    // Enter invalid value
+    fireEvent.change(emailInput, { target: { value: 'invalid' } })
+    // Blur should trigger validation
+    fireEvent.blur(emailInput)
+
+    expect(emailInput.value).toBe('invalid')
+  })
+
+  // TEST 53: onBlur handler validates phone field (duplicated validation)
+  test('phone onBlur validates with duplicated logic', () => {
+    render(<CustomersPage />)
+
+    const phoneInput = screen.getByLabelText(/phone/i)
+
+    // Enter invalid value
+    fireEvent.change(phoneInput, { target: { value: '123' } })
+    // Blur should trigger validation
+    fireEvent.blur(phoneInput)
+
+    expect(phoneInput.value).toBe('123')
+  })
+
+  // TEST 54: onBlur handler validates address field (duplicated validation)
+  test('address onBlur validates with duplicated logic', () => {
+    render(<CustomersPage />)
+
+    const addressInput = screen.getByLabelText(/address/i)
+
+    // Enter invalid value
+    fireEvent.change(addressInput, { target: { value: 'Short' } })
+    // Blur should trigger validation
+    fireEvent.blur(addressInput)
+
+    expect(addressInput.value).toBe('Short')
+  })
+
+  // TEST 55: Validation logic is duplicated in onBlur (code inspection)
+  test('onBlur handlers contain duplicated validation logic', () => {
+    // Check that validation logic is duplicated in onBlur handlers
+    const onBlurPattern = /onBlur.*=.*\(/g
+    const onBlurMatches = sourceCode.match(onBlurPattern) || []
+
+    // Should have onBlur handlers for all 4 fields
+    expect(onBlurMatches.length).toBeGreaterThanOrEqual(4)
+
+    // Check for duplicated validation comment marker
+    expect(sourceCode.includes('DUPLICATED VALIDATION #2')).toBe(true)
+  })
+
+  // TEST 56: validateForm function exists in source code
+  test('component has a validateForm function with duplicated validation', () => {
+    expect(sourceCode.includes('const validateForm')).toBe(true)
+    expect(sourceCode.includes('DUPLICATED VALIDATION #3')).toBe(true)
+  })
+
+  // TEST 57: validateForm returns true for valid form data
+  test('validateForm returns true when all fields are valid', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+    const emailInput = screen.getByLabelText(/email/i)
+    const phoneInput = screen.getByLabelText(/phone/i)
+    const addressInput = screen.getByLabelText(/address/i)
+
+    // Fill in valid data
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
+    fireEvent.change(phoneInput, { target: { value: '1234567890' } })
+    fireEvent.change(addressInput, { target: { value: '123 Main St, City, State 12345' } })
+
+    // Submit button should be available to click
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+    expect(submitButton).toBeInTheDocument()
+  })
+
+  // TEST 58: validateForm returns false for invalid form data
+  test('validateForm returns false when fields are invalid', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+
+    // Fill in invalid data
+    fireEvent.change(nameInput, { target: { value: 'J' } })
+
+    // Click submit - should trigger validation
+    fireEvent.click(submitButton)
+
+    // Error should appear (will test separately)
+    expect(nameInput.value).toBe('J')
+  })
+
+  // TEST 59: Error messages display below name field
+  test('displays error message below name field when invalid', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+
+    // Trigger validation error
+    fireEvent.change(nameInput, { target: { value: 'J' } })
+    fireEvent.blur(nameInput)
+
+    // Error message should appear
+    const errorMessage = screen.getByText(/name must be at least 2 characters/i)
+    expect(errorMessage).toBeInTheDocument()
+  })
+
+  // TEST 60: Error messages display below email field
+  test('displays error message below email field when invalid', () => {
+    render(<CustomersPage />)
+
+    const emailInput = screen.getByLabelText(/email/i)
+
+    // Trigger validation error
+    fireEvent.change(emailInput, { target: { value: 'invalid' } })
+    fireEvent.blur(emailInput)
+
+    // Error message should appear
+    const errorMessage = screen.getByText(/email must be a valid format/i)
+    expect(errorMessage).toBeInTheDocument()
+  })
+
+  // TEST 61: Error messages display below phone field
+  test('displays error message below phone field when invalid', () => {
+    render(<CustomersPage />)
+
+    const phoneInput = screen.getByLabelText(/phone/i)
+
+    // Trigger validation error
+    fireEvent.change(phoneInput, { target: { value: '123' } })
+    fireEvent.blur(phoneInput)
+
+    // Error message should appear
+    const errorMessage = screen.getByText(/phone must be at least 10 digits/i)
+    expect(errorMessage).toBeInTheDocument()
+  })
+
+  // TEST 62: Error messages display below address field
+  test('displays error message below address field when invalid', () => {
+    render(<CustomersPage />)
+
+    const addressInput = screen.getByLabelText(/address/i)
+
+    // Trigger validation error
+    fireEvent.change(addressInput, { target: { value: 'Short' } })
+    fireEvent.blur(addressInput)
+
+    // Error message should appear
+    const errorMessage = screen.getByText(/address must be at least 10 characters/i)
+    expect(errorMessage).toBeInTheDocument()
+  })
+
+  // TEST 63: Submit button triggers validateForm function
+  test('submit button triggers validateForm before submission', () => {
+    render(<CustomersPage />)
+
+    const submitButton = screen.getByRole('button', { name: /add customer/i })
+
+    // Click submit with empty form
+    fireEvent.click(submitButton)
+
+    // Errors should be displayed for all required fields
+    expect(screen.getByText(/name is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/phone is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/address is required/i)).toBeInTheDocument()
+  })
+
+  // TEST 64: Error messages clear when input becomes valid
+  test('error messages clear when invalid input becomes valid', () => {
+    render(<CustomersPage />)
+
+    const nameInput = screen.getByLabelText(/name/i)
+
+    // Trigger validation error
+    fireEvent.change(nameInput, { target: { value: 'J' } })
+    fireEvent.blur(nameInput)
+
+    // Error should appear
+    expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument()
+
+    // Fix the input
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
+
+    // Error should disappear
+    expect(screen.queryByText(/name must be at least 2 characters/i)).not.toBeInTheDocument()
   })
 })

@@ -181,10 +181,254 @@ export default function CustomersPage() {
     }, 5000)
   }, [customers])
 
+  // validateForm function - DUPLICATED VALIDATION #3
+  // Third copy of all validation logic (duplicated from onChange and onBlur)
+  const validateForm = () => {
+    let isValid = true
+
+    // DUPLICATED VALIDATION #3 - validateForm for Name
+    // Validation: required, 2-50 characters (EXACT COPY)
+    if (customerName === '') {
+      setNameError('Name is required')
+      isValid = false
+    } else if (customerName.length < 2) {
+      setNameError('Name must be at least 2 characters')
+      isValid = false
+    } else if (customerName.length > 50) {
+      setNameError('Name must be no more than 50 characters')
+      isValid = false
+    } else {
+      setNameError('')
+    }
+
+    // DUPLICATED VALIDATION #3 - validateForm for Email
+    // Validation: required, valid email format (EXACT COPY)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (customerEmail === '') {
+      setEmailError('Email is required')
+      isValid = false
+    } else if (!emailRegex.test(customerEmail)) {
+      setEmailError('Email must be a valid format')
+      isValid = false
+    } else {
+      setEmailError('')
+    }
+
+    // DUPLICATED VALIDATION #3 - validateForm for Phone
+    // Validation: required, 10-15 digits (EXACT COPY)
+    const digitsOnly = customerPhone.replace(/\D/g, '')
+    if (customerPhone === '') {
+      setPhoneError('Phone is required')
+      isValid = false
+    } else if (digitsOnly.length < 10) {
+      setPhoneError('Phone must be at least 10 digits')
+      isValid = false
+    } else if (digitsOnly.length > 15) {
+      setPhoneError('Phone must be no more than 15 digits')
+      isValid = false
+    } else {
+      setPhoneError('')
+    }
+
+    // DUPLICATED VALIDATION #3 - validateForm for Address
+    // Validation: required, 10-200 characters (EXACT COPY)
+    if (customerAddress === '') {
+      setAddressError('Address is required')
+      isValid = false
+    } else if (customerAddress.length < 10) {
+      setAddressError('Address must be at least 10 characters')
+      isValid = false
+    } else if (customerAddress.length > 200) {
+      setAddressError('Address must be no more than 200 characters')
+      isValid = false
+    } else {
+      setAddressError('')
+    }
+
+    return isValid
+  }
+
   return (
     <div>
       <h1>Customer Manager</h1>
       <p>This is a monolithic customer management component with 20+ useState hooks.</p>
+
+      {/* Customer Input Form */}
+      <div>
+        <h2>Add Customer</h2>
+
+        {/* Name Input */}
+        <div>
+          <label htmlFor="customerName">Name:</label>
+          <input
+            id="customerName"
+            type="text"
+            value={customerName}
+            onChange={(e) => {
+              const value = e.target.value
+              setCustomerName(value)
+
+              // DUPLICATED VALIDATION #1 - onChange for Name
+              // Validation: required, 2-50 characters
+              if (value === '') {
+                setNameError('Name is required')
+              } else if (value.length < 2) {
+                setNameError('Name must be at least 2 characters')
+              } else if (value.length > 50) {
+                setNameError('Name must be no more than 50 characters')
+              } else {
+                setNameError('')
+              }
+            }}
+            onBlur={(e) => {
+              const value = e.target.value
+
+              // DUPLICATED VALIDATION #2 - onBlur for Name
+              // Validation: required, 2-50 characters (EXACT COPY)
+              if (value === '') {
+                setNameError('Name is required')
+              } else if (value.length < 2) {
+                setNameError('Name must be at least 2 characters')
+              } else if (value.length > 50) {
+                setNameError('Name must be no more than 50 characters')
+              } else {
+                setNameError('')
+              }
+            }}
+          />
+          {nameError && <div style={{ color: 'red' }}>{nameError}</div>}
+        </div>
+
+        {/* Email Input */}
+        <div>
+          <label htmlFor="customerEmail">Email:</label>
+          <input
+            id="customerEmail"
+            type="email"
+            value={customerEmail}
+            onChange={(e) => {
+              const value = e.target.value
+              setCustomerEmail(value)
+
+              // DUPLICATED VALIDATION #1 - onChange for Email
+              // Validation: required, valid email format
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+              if (value === '') {
+                setEmailError('Email is required')
+              } else if (!emailRegex.test(value)) {
+                setEmailError('Email must be a valid format')
+              } else {
+                setEmailError('')
+              }
+            }}
+            onBlur={(e) => {
+              const value = e.target.value
+
+              // DUPLICATED VALIDATION #2 - onBlur for Email
+              // Validation: required, valid email format (EXACT COPY)
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+              if (value === '') {
+                setEmailError('Email is required')
+              } else if (!emailRegex.test(value)) {
+                setEmailError('Email must be a valid format')
+              } else {
+                setEmailError('')
+              }
+            }}
+          />
+          {emailError && <div style={{ color: 'red' }}>{emailError}</div>}
+        </div>
+
+        {/* Phone Input */}
+        <div>
+          <label htmlFor="customerPhone">Phone:</label>
+          <input
+            id="customerPhone"
+            type="tel"
+            value={customerPhone}
+            onChange={(e) => {
+              const value = e.target.value
+              setCustomerPhone(value)
+
+              // DUPLICATED VALIDATION #1 - onChange for Phone
+              // Validation: required, 10-15 digits
+              const digitsOnly = value.replace(/\D/g, '')
+              if (value === '') {
+                setPhoneError('Phone is required')
+              } else if (digitsOnly.length < 10) {
+                setPhoneError('Phone must be at least 10 digits')
+              } else if (digitsOnly.length > 15) {
+                setPhoneError('Phone must be no more than 15 digits')
+              } else {
+                setPhoneError('')
+              }
+            }}
+            onBlur={(e) => {
+              const value = e.target.value
+
+              // DUPLICATED VALIDATION #2 - onBlur for Phone
+              // Validation: required, 10-15 digits (EXACT COPY)
+              const digitsOnly = value.replace(/\D/g, '')
+              if (value === '') {
+                setPhoneError('Phone is required')
+              } else if (digitsOnly.length < 10) {
+                setPhoneError('Phone must be at least 10 digits')
+              } else if (digitsOnly.length > 15) {
+                setPhoneError('Phone must be no more than 15 digits')
+              } else {
+                setPhoneError('')
+              }
+            }}
+          />
+          {phoneError && <div style={{ color: 'red' }}>{phoneError}</div>}
+        </div>
+
+        {/* Address Textarea */}
+        <div>
+          <label htmlFor="customerAddress">Address:</label>
+          <textarea
+            id="customerAddress"
+            value={customerAddress}
+            onChange={(e) => {
+              const value = e.target.value
+              setCustomerAddress(value)
+
+              // DUPLICATED VALIDATION #1 - onChange for Address
+              // Validation: required, 10-200 characters
+              if (value === '') {
+                setAddressError('Address is required')
+              } else if (value.length < 10) {
+                setAddressError('Address must be at least 10 characters')
+              } else if (value.length > 200) {
+                setAddressError('Address must be no more than 200 characters')
+              } else {
+                setAddressError('')
+              }
+            }}
+            onBlur={(e) => {
+              const value = e.target.value
+
+              // DUPLICATED VALIDATION #2 - onBlur for Address
+              // Validation: required, 10-200 characters (EXACT COPY)
+              if (value === '') {
+                setAddressError('Address is required')
+              } else if (value.length < 10) {
+                setAddressError('Address must be at least 10 characters')
+              } else if (value.length > 200) {
+                setAddressError('Address must be no more than 200 characters')
+              } else {
+                setAddressError('')
+              }
+            }}
+          />
+          {addressError && <div style={{ color: 'red' }}>{addressError}</div>}
+        </div>
+
+        {/* Submit Button */}
+        <button type="button" onClick={validateForm}>
+          Add Customer
+        </button>
+      </div>
     </div>
   )
 }
