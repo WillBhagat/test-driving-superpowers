@@ -272,6 +272,23 @@ export const validationService = {
   }
 };
 
+// Global styles for loading spinner animation
+// Using a style element that's only injected once to avoid duplicates
+if (typeof document !== 'undefined') {
+  const styleId = 'customerManager-spinner-keyframes';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 /**
  * CustomerManager component - main component for managing customer data
  * Provides UI for viewing, creating, updating, and deleting customers
@@ -502,6 +519,9 @@ export default function CustomerManager() {
    * Clears current error and initiates a fresh API call
    */
   const handleRetry = async (): Promise<void> => {
+    // Prevent retry if already loading to avoid race conditions
+    if (loading) return;
+
     // Clear error and set loading state
     setError(null);
     setLoading(true);
@@ -606,19 +626,11 @@ export default function CustomerManager() {
               animation: 'spin 1s linear infinite'
             }}
           />
-          <style>
-            {`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}
-          </style>
         </div>
       )}
 
-      {/* Main content - displayed when not loading */}
-      {!loading && (
+      {/* Main content - displayed when not loading and no error */}
+      {!loading && !error && (
         <div>
           <h1>Customer Manager</h1>
           <p>Customer management functionality will be implemented in subsequent tasks.</p>
